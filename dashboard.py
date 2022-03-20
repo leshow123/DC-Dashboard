@@ -190,7 +190,7 @@ fig.update_xaxes(title_text="Date Purchased", row=1, col=2)
 fig.update_yaxes(title_text="Number", row=1, col=2)
 
 
-#fig.update_layout(title_text="XXXXXXXXXXXXX")
+fig.update_layout(showlegend=False)
 
-fig.show()
+#fig.show()
 fig.write_html('index.html', auto_open=True)
