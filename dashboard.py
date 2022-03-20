@@ -107,16 +107,16 @@ num_new_subs['Number of Subscribers (DNR-ed)'] = 0
 
 new_subs_dnr_df = all_data_df[['Date Purchased', 'do_not_renew']].copy()
 new_subs_dnr_df = new_subs_dnr_df.dropna()
-print(new_subs_dnr_df.head(), "\n\n", "DNRs over time", "\n")
+#print(new_subs_dnr_df.head(), "\n\n", "DNRs over time", "\n")
 new_subs_dnr_df = new_subs_dnr_df[new_subs_dnr_df.do_not_renew != "f"]
-print(new_subs_dnr_df.head(), "\n\n", "Frequency Table: DNRs Over Time", "\n")
+#print(new_subs_dnr_df.head(), "\n\n", "Frequency Table: DNRs Over Time", "\n")
 # Delete the 'do_not_renew' column, currently holding trues-only, and build a "trues-only" frequency
 # table. 
 del new_subs_dnr_df["do_not_renew"]
 new_subs_dnr_df["Date Purchased"] = new_subs_dnr_df["Date Purchased"].apply(cut)
 new_subs_dnr_df["Date Purchased"] = new_subs_dnr_df["Date Purchased"].apply(format_date1)
 num_new_subs_dnr = new_subs_dnr_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers (DNR-ed)').reset_index()
-print(num_new_subs_dnr.head(), "\n", "Total Subscriptions and DNR-ed Component Over Time", "\n")
+#print(num_new_subs_dnr.head(), "\n", "Total Subscriptions and DNR-ed Component Over Time", "\n")
 
 # combine two dfs
 all_subs_2 = pd.merge(num_new_subs, num_new_subs_dnr, on="Date Purchased", how="outer")
@@ -124,15 +124,43 @@ all_subs_2 = pd.merge(num_new_subs, num_new_subs_dnr, on="Date Purchased", how="
 del all_subs_2["Number of Subscribers (DNR-ed)_x"]
 all_subs_2 = all_subs_2.rename(columns={'Number of Subscribers (DNR-ed)_y': 'Number of Subscribers (DNR-ed)'})
 all_subs_2['Number of Subscribers (DNR-ed)'].fillna(0, inplace=True)
-print(all_subs_2.head())
+#print(all_subs_2.head())
 
 #######################################################################################################################
 
+# **** STATUS: CANCELLED [7] OVER TIME ***
+
+del num_new_subs['Number of Subscribers (DNR-ed)']
+num_new_subs['Number of Subscribers (Cancelled)'] = 0
+
+new_subs_cancelled_df = all_data_df[['Date Purchased', 'status']].copy()
+new_subs_cancelled_df = new_subs_cancelled_df.dropna()
+print(new_subs_cancelled_df.head(), "\n\n", "Status (Cancelled) over time", "\n")
+new_subs_cancelled_df = new_subs_cancelled_df[new_subs_cancelled_df.status == 7]
+print(new_subs_cancelled_df.head(), "\n\n", "Frequency Table: Status (Cancelled) Over Time", "\n")
+# Delete the 'status' column, currently holding 7s-only, and build a "7s-only, i.e., cancelled" frequency
+# table.
+del new_subs_cancelled_df["status"]
+new_subs_cancelled_df["Date Purchased"] = new_subs_cancelled_df["Date Purchased"].apply(cut)
+new_subs_cancelled_df["Date Purchased"] = new_subs_cancelled_df["Date Purchased"].apply(format_date1)
+num_new_subs_cancelled = new_subs_cancelled_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers (Cancelled)').reset_index()
+print(num_new_subs_cancelled.head(), "\n", "Total Subscriptions and Cancelled Subscriptions Over Time", "\n")
+
+# combine two dfs
+all_subs_3 = pd.merge(num_new_subs, num_new_subs_cancelled, on="Date Purchased", how="outer")
+# There'll two columns with the lede, "Number of Subscribers (Cancelled)..."
+del all_subs_3["Number of Subscribers (Cancelled)_x"]
+all_subs_3 = all_subs_3.rename(columns={'Number of Subscribers (Cancelled)_y': 'Number of Subscribers (Cancelled)'})
+all_subs_3['Number of Subscribers (Cancelled)'].fillna(0, inplace=True)
+print(all_subs_3.head())
+
+#######################################################################################################################
 
 #  Plot data
 
-fig = make_subplots(rows=2, cols=1, subplot_titles=("Subscriptions Over Time | Trial Subscriptions Overlayed", 
-                                                    "Subscriptions Over Time | DNR-ed Subscriptions Overlayed"))
+fig = make_subplots(rows=2, cols=2, subplot_titles=("Subscriptions/Time | Trial Subscriptions Overlayed", 
+                                                    "Subscriptions/Time | DNR-ed Subscriptions Overlayed",
+                                                    "Subscriptions/Time | Cancelled Subscriptions Overlayed"))
 
 ############## A. all_subs ###############
 
@@ -151,6 +179,16 @@ fig.add_trace(go.Scatter(x=all_subs_2["Date Purchased"], y=all_subs_2["Number of
                          row=2, col=1)
 fig.update_xaxes(title_text="Date Purchased", row=2, col=1)
 fig.update_yaxes(title_text="Number", row=2, col=1)
+
+############## C. all_subs_3 ###############
+
+fig.add_trace(go.Scatter(x=all_subs_3["Date Purchased"], y=all_subs_3["Number of Subscribers"], name="Number of Subscribers"),
+                         row=1, col=2)
+fig.add_trace(go.Scatter(x=all_subs_3["Date Purchased"], y=all_subs_3["Number of Subscribers (Cancelled)"], name="Number of Cancelled Subscriptions"), 
+                         row=1, col=2)
+fig.update_xaxes(title_text="Date Purchased", row=1, col=2)
+fig.update_yaxes(title_text="Number", row=1, col=2)
+
 
 #fig.update_layout(title_text="XXXXXXXXXXXXX")
 
