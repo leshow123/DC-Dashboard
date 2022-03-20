@@ -70,25 +70,25 @@ new_subs_df = new_subs_df.dropna(how = 'all')
 new_subs_df["Date Purchased"] = new_subs_df["Date Purchased"].apply(cut)
 new_subs_df["Date Purchased"] = new_subs_df["Date Purchased"].apply(format_date1)
 num_new_subs = new_subs_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers').reset_index()
-# Add a new column, 'Number of Subscribers From Trialers'. Initialize entire column to 0 
+# Add a new column, 'Number of Subscribers (Trialers)'. Initialize entire column to 0 
 num_new_subs['Number of Subscribers (Trialers)'] = 0
-print(num_new_subs.head(), "\n")
+#print(num_new_subs.head(), "\n")
 
 # **** NEW TRIALERS OVER TIME ***
 
 # format new subscriptions from trialers data (using only subscriber since_data and was_trialer and grouping by date)
 new_subs_from_trial_df = all_data_df[['Date Purchased', 'was_trial']].copy()
 new_subs_from_trial_df = new_subs_from_trial_df.dropna()
-print(new_subs_from_trial_df.head(), "\n\n", "Trials over time", "\n")
+#print(new_subs_from_trial_df.head(), "\n\n", "Trials over time", "\n")
 new_subs_from_trial_df = new_subs_from_trial_df[new_subs_from_trial_df.was_trial != "f"]
-print(new_subs_from_trial_df.head(), "\n\n", "Frequency Table: Trialers Over Time", "\n")
+#print(new_subs_from_trial_df.head(), "\n\n", "Frequency Table: Trialers Over Time", "\n")
 # Delete the 'was_trial' column, currently holding trues-only, and build a "trues-only" frequency
 # table. 
 del new_subs_from_trial_df["was_trial"]
 new_subs_from_trial_df["Date Purchased"] = new_subs_from_trial_df["Date Purchased"].apply(cut)
 new_subs_from_trial_df["Date Purchased"] = new_subs_from_trial_df["Date Purchased"].apply(format_date1)
 num_new_subs_from_trial = new_subs_from_trial_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers (Trialers)').reset_index()
-print(num_new_subs_from_trial.head(), "\n", "Total Subscriptions and Trials Component Over Time", "\n")
+#print(num_new_subs_from_trial.head(), "\n", "Total Subscriptions and Trials Component Over Time", "\n")
 
 # *** COMBINED: NEW SUBSCRIBERS AND TRIALERS OVER TIME ***
 
@@ -99,20 +99,60 @@ del all_subs["Number of Subscribers (Trialers)_x"]
 all_subs = all_subs.rename(columns={'Number of Subscribers (Trialers)_y': 'Number of Subscribers (Trialers)'})
 all_subs['Number of Subscribers (Trialers)'].fillna(0, inplace=True)
 
-#  plot data
-df = all_subs
-fig = make_subplots(rows=1, cols=1, subplot_titles=(""))
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Number of Subscribers"),
-                         row=1, col=1)
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers (Trialers)"], name="Number of Trialers"), 
-                         row=1, col=1)
+#######################################################################################################################
 
+# **** DNRs OVER TIME ***
+del num_new_subs['Number of Subscribers (Trialers)']
+num_new_subs['Number of Subscribers (DNR-ed)'] = 0
+
+new_subs_dnr_df = all_data_df[['Date Purchased', 'do_not_renew']].copy()
+new_subs_dnr_df = new_subs_dnr_df.dropna()
+print(new_subs_dnr_df.head(), "\n\n", "DNRs over time", "\n")
+new_subs_dnr_df = new_subs_dnr_df[new_subs_dnr_df.do_not_renew != "f"]
+print(new_subs_dnr_df.head(), "\n\n", "Frequency Table: DNRs Over Time", "\n")
+# Delete the 'do_not_renew' column, currently holding trues-only, and build a "trues-only" frequency
+# table. 
+del new_subs_dnr_df["do_not_renew"]
+new_subs_dnr_df["Date Purchased"] = new_subs_dnr_df["Date Purchased"].apply(cut)
+new_subs_dnr_df["Date Purchased"] = new_subs_dnr_df["Date Purchased"].apply(format_date1)
+num_new_subs_dnr = new_subs_dnr_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers (DNR-ed)').reset_index()
+print(num_new_subs_dnr.head(), "\n", "Total Subscriptions and DNR-ed Component Over Time", "\n")
+
+# combine two dfs
+all_subs_2 = pd.merge(num_new_subs, num_new_subs_dnr, on="Date Purchased", how="outer")
+# There'll two columns with the lede, "Number of Subscribers (DNR-ed)..."
+del all_subs_2["Number of Subscribers (DNR-ed)_x"]
+all_subs_2 = all_subs_2.rename(columns={'Number of Subscribers (DNR-ed)_y': 'Number of Subscribers (DNR-ed)'})
+all_subs_2['Number of Subscribers (DNR-ed)'].fillna(0, inplace=True)
+print(all_subs_2.head())
+
+#######################################################################################################################
+
+
+#  Plot data
+
+fig = make_subplots(rows=2, cols=1, subplot_titles=("Subscriptions Over Time | Trial Subscriptions Overlayed", 
+                                                    "Subscriptions Over Time | DNR-ed Subscriptions Overlayed"))
+
+############## A. all_subs ###############
+
+fig.add_trace(go.Scatter(x=all_subs["Date Purchased"], y=all_subs["Number of Subscribers"], name="Number of Subscribers"),
+                         row=1, col=1)
+fig.add_trace(go.Scatter(x=all_subs["Date Purchased"], y=all_subs["Number of Subscribers (Trialers)"], name="Number of Trialers"), 
+                         row=1, col=1)
 fig.update_xaxes(title_text="Date Purchased", row=1, col=1)
 fig.update_yaxes(title_text="Number", row=1, col=1)
-fig.update_layout(title_text="Subscriptions Over Time | Trial Subscriptions Overlayed")
 
+############## B. all_subs_2 ###############
 
-#### Plot Other Data Here #######
+fig.add_trace(go.Scatter(x=all_subs_2["Date Purchased"], y=all_subs_2["Number of Subscribers"], name="Number of Subscribers"),
+                         row=2, col=1)
+fig.add_trace(go.Scatter(x=all_subs_2["Date Purchased"], y=all_subs_2["Number of Subscribers (DNR-ed)"], name="Number of DNRs"), 
+                         row=2, col=1)
+fig.update_xaxes(title_text="Date Purchased", row=2, col=1)
+fig.update_yaxes(title_text="Number", row=2, col=1)
+
+#fig.update_layout(title_text="XXXXXXXXXXXXX")
 
 fig.show()
 fig.write_html('index.html', auto_open=True)
