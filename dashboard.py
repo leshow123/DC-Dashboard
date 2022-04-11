@@ -1,46 +1,3 @@
-""" import plotly.express as px
-
-fig = px.bar(x=["a", "b", "c", "d"], y=[1, 3, 2, 5])
-#print(fig)
-#fig.write_html('index.html', auto_open=True)
-
-####### lower-level API ##########
-
-import plotly.graph_objects as go
-import numpy as np
-
-N = 1000
-t = np.linspace(0, 10, 100)
-y = np.sin(t)
-y_amp = y + 0.15
-fig = go.Figure(data=[go.Scatter(x=t, y=y, mode='markers'), go.Scatter(x=t, y=y_amp, mode='markers')])
-#fig.write_html('index2.html', auto_open=True)
-
-####### lower-leverl API: Multiple Subplots with Titles #########
-
-from plotly.subplots import make_subplots
-#import plotly.graph_objects as go
-
-fig = make_subplots(
-    rows=2, cols=2,
-    subplot_titles=("Plot 1", "Plot 2", "Plot 3", "Plot 4"))
-
-fig.add_trace(go.Scatter(x=[1, 2, 3], y=[4, 5, 6]),
-              row=1, col=1)
-
-fig.add_trace(go.Scatter(x=[20, 30, 40], y=[50, 60, 70]),
-              row=1, col=2)
-
-fig.add_trace(go.Scatter(x=[300, 400, 500], y=[600, 700, 800]),
-              row=2, col=1)
-
-fig.add_trace(go.Scatter(x=t, y=y_amp, mode='markers'),
-              row=2, col=2)
-
-fig.update_layout(height=500, width=700,
-                  title_text="Multiple Subplots with Titles")
-fig.write_html('index.html', auto_open=True) """
-
 import plotly.express as px
 import plotly.io as pio
 pio.templates
@@ -55,9 +12,146 @@ import re
 def cut(x):
     return x[:-3]
 
-def format_date1(x):
-    return datetime.datetime.strptime(x, "%Y-%m-%d %X").strftime("%Y-%m-%d")
+def cut7(x):
+    return x[:10]
 
+def format_date1(x):
+    if x == '':
+        return datetime.datetime.strptime("9999-12-31 00:00:00", "%Y-%m-%d %X").strftime("%Y-%m-%d")
+    else:
+        return datetime.datetime.strptime(x, "%Y-%m-%d %X").strftime("%Y-%m-%d")
+
+def format_date2(x):
+    if x == '' or x == 'nan':
+        return datetime.datetime.strptime("9999-12-31 00:00:00", "%Y-%m-%d %X").strftime("%Y-%m-%d")
+    else:
+        return datetime.datetime.strptime(x, "%Y-%m-%d").strftime("%Y-%m-%d")
+
+def date_converter(y):
+    if y == 'nan':
+        return date.fromisoformat("9999-12-31")
+    else:    
+        return date.fromisoformat(y)
+
+
+# *** LOAD DATA ***
+
+track_interest_df = pd.read_csv("track_interest.csv")
+subscriptions_df = pd.read_csv("subscriptions.csv")
+
+subscriptions_sub_df = pd.DataFrame(subscriptions_df[['id', 'stripe_id', 'paid_until', 'was_trial', 'do_not_renew', 'status']])
+subscriptions_sub_df = subscriptions_sub_df.rename(columns={'id': 'subscription_id'})
+
+track_interest_sub_df = track_interest_df[['purchased_at', 'subscription_id']].copy()
+track_interest_sub_df["purchased_at"] = track_interest_sub_df["purchased_at"].astype(str)
+track_interest_sub_df["purchased_at"] = track_interest_sub_df["purchased_at"].apply(cut7)
+track_interest_sub_df["purchased_at"] = track_interest_sub_df["purchased_at"].apply(format_date2)
+
+all_data_df = pd.merge(track_interest_sub_df, subscriptions_sub_df, on="subscription_id", how="outer")
+all_data_df['purchased_at'].fillna(0, inplace=True)
+all_data_df = all_data_df[all_data_df.purchased_at != 0]
+
+# *** NEW SUBSCRIBERS OVER TIME *** 
+
+new_subs_df = pd.DataFrame(all_data_df['purchased_at'])
+new_subs_df = new_subs_df.rename(columns={'purchased_at': 'Date Purchased'})
+new_subs_df = new_subs_df.dropna(how = 'all')
+num_new_subs = new_subs_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers').reset_index()
+
+# Add a new column, 'Number of Subscribers From Trialers'. Initialize entire column to 0, preparatory to merge.
+ 
+num_new_subs['Number of Subscribers (Trialers)'] = 0
+
+# **** NEW TRIALERS OVER TIME ***
+
+new_subs_from_trial_df = all_data_df[['purchased_at', 'was_trial']].copy()
+new_subs_from_trial_df = new_subs_from_trial_df.dropna()
+new_subs_from_trial_df = new_subs_from_trial_df[new_subs_from_trial_df.was_trial == "t"]
+
+# Delete the 'was_trial' column, currently holding trues-only, and build a "trues-only" frequency
+# table.
+  
+del new_subs_from_trial_df["was_trial"]
+new_subs_from_trial_df = new_subs_from_trial_df.rename(columns={'purchased_at': 'Date Purchased'})
+num_new_subs_from_trial = new_subs_from_trial_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers (Trialers)').reset_index()
+
+# *** COMBINED: NEW SUBSCRIPTIONS AND TRIALS OVER TIME ***
+
+subscribers_over_time_trialers_overlayed = pd.merge(num_new_subs, num_new_subs_from_trial, on="Date Purchased", how="outer")
+
+# There'll two columns with the lede, "Number of Subscribers (Trialers)..."
+
+del subscribers_over_time_trialers_overlayed["Number of Subscribers (Trialers)_x"]
+subscribers_over_time_trialers_overlayed = subscribers_over_time_trialers_overlayed.rename(columns={'Number of Subscribers (Trialers)_y': 'Number of Subscribers (Trialers)'})
+subscribers_over_time_trialers_overlayed['Number of Subscribers (Trialers)'].fillna(0, inplace=True)
+subscribers_over_time_trialers_overlayed["Date Purchased"] = subscribers_over_time_trialers_overlayed["Date Purchased"].apply(date_converter)
+
+# Take out the placeholder 9999-12-31
+
+subscribers_over_time_trialers_overlayed = subscribers_over_time_trialers_overlayed[:-1]
+
+#######################################################################################################################################
+
+
+all_paid = all_data_df
+
+# We need two separate views/tables to achieve the aim. This is one.
+all_paid_grped_sub_df = all_paid.groupby(['purchased_at']).size().to_frame(name="No. of Paid Subscriptions").reset_index()
+
+all_paid_grped_sub_df["Active Paid Subscriptions, Daily"] = 0
+all_paid_grped_sub_df["Active Paid Subscriptions, Daily (w/o Trials)"] = 0
+all_paid_grped_sub_df["Active Trialers, Daily"] = 0
+all_paid_grped_sub_df["Active DNRs"] = 0
+all_paid_grped_by_purchased_at = all_paid.groupby(['purchased_at'])
+
+#Convert SeriesGroupBy to DataFrame and reformat date columns
+all_paid_grped_by_purchased_at = all_paid_grped_by_purchased_at.apply(pd.DataFrame)
+all_paid_grped_by_purchased_at['purchased_at'] = all_paid_grped_by_purchased_at['purchased_at'].astype(str)
+all_paid_grped_by_purchased_at['purchased_at'] = all_paid_grped_by_purchased_at['purchased_at'].apply(date_converter)
+all_paid_grped_by_purchased_at['paid_until'] = all_paid_grped_by_purchased_at['paid_until'].astype(str)
+all_paid_grped_by_purchased_at["paid_until"] = all_paid_grped_by_purchased_at["paid_until"].apply(cut7)
+all_paid_grped_by_purchased_at['paid_until'] = all_paid_grped_by_purchased_at['paid_until'].apply(date_converter)
+
+#print(all_paid_grped_by_purchased_at, "\n")
+
+limit = len(all_paid_grped_sub_df.index)
+for i in range(limit):
+    this_purchased_at = all_paid_grped_sub_df['purchased_at'][i]
+
+    # compare each purchased_at with ENTIRE HISTORY of paid_untils up until the purchased_at date
+
+    subs_b4_this_purchased_at_date = all_paid_grped_by_purchased_at[all_paid_grped_by_purchased_at.purchased_at < date.fromisoformat(this_purchased_at)]
+
+    active_paid_subs_b4_this_purchased_at_date = subs_b4_this_purchased_at_date[subs_b4_this_purchased_at_date.paid_until > date.fromisoformat(this_purchased_at)]
+    active_paid_subs_b4_this_purchased_at_date_SAN_TRIAL = active_paid_subs_b4_this_purchased_at_date[active_paid_subs_b4_this_purchased_at_date.was_trial == "f"]
+
+    # **** ACTIVE DNRs % ****
+    active_paid_subs_b4_this_purchased_at_date_ACTIVE_DNRs = active_paid_subs_b4_this_purchased_at_date[active_paid_subs_b4_this_purchased_at_date.do_not_renew == "t"]
+    
+    # **** ACTIVE TRIALERS OVER TIME ****
+    active_paid_subs_b4_this_purchased_at_date_TRIAL = active_paid_subs_b4_this_purchased_at_date[active_paid_subs_b4_this_purchased_at_date.was_trial == "t"]
+    #print("==> ", this_purchased_at, "\n", active_paid_subs_b4_this_purchased_at_date.count()["paid_until"],"\n")
+    
+    all_paid_grped_sub_df["Active Paid Subscriptions, Daily"][i] = active_paid_subs_b4_this_purchased_at_date.count()["paid_until"]
+    all_paid_grped_sub_df["Active Paid Subscriptions, Daily (w/o Trials)"][i] = active_paid_subs_b4_this_purchased_at_date_SAN_TRIAL.count()["paid_until"]
+    all_paid_grped_sub_df["Active Trialers, Daily"][i] = active_paid_subs_b4_this_purchased_at_date_TRIAL.count()["paid_until"]
+    all_paid_grped_sub_df["Active DNRs"][i] = active_paid_subs_b4_this_purchased_at_date_ACTIVE_DNRs.count()['paid_until']
+
+# Note: Delete last row because of placeholder purchased_at  date "9999-12-13"
+all_paid_grped_sub_df = all_paid_grped_sub_df[:-1]
+all_paid_grped_sub_df = all_paid_grped_sub_df.rename(columns={'purchased_at': 'Date Purchased'})
+
+#############################################################################################################################################
+
+
+
+
+
+
+
+
+
+"""
 #TODO Why not purchased_at inplace of subscriber_since?
 
 # *** NEW SUBSCRIBERS OVER TIME *** 
@@ -102,6 +196,7 @@ all_subs['Number of Subscribers (Trialers)'].fillna(0, inplace=True)
 #######################################################################################################################
 
 # **** DNRs OVER TIME ***
+
 del num_new_subs['Number of Subscribers (Trialers)']
 num_new_subs['Number of Subscribers (DNR-ed)'] = 0
 
@@ -156,32 +251,67 @@ print(all_subs_3.head())
 
 #######################################################################################################################
 
+"""
+
+
+
+
+
+
+
+
+
+
+
 #  Plot data
 
-fig = make_subplots(rows=2, cols=2, subplot_titles=("Subscriptions/Time | Trial Subscriptions Overlayed", 
-                                                    "Subscriptions/Time | DNR-ed Subscriptions Overlayed",
-                                                    "Subscriptions/Time | Cancelled Subscriptions Overlayed"))
+fig = make_subplots(rows=2, cols=2, subplot_titles=("Per Day New Subscriptions | Trials Overlayed", 
+                                                    "Active Subscriptions",
+                                                    "Active Subscriptions | DNRs Percentages"))
 
 ############## A. all_subs ###############
 
-fig.add_trace(go.Scatter(x=all_subs["Date Purchased"], y=all_subs["Number of Subscribers"], name="Number of Subscribers"),
+df = subscribers_over_time_trialers_overlayed
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"),
                          row=1, col=1)
-fig.add_trace(go.Scatter(x=all_subs["Date Purchased"], y=all_subs["Number of Subscribers (Trialers)"], name="Number of Trialers"), 
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers (Trialers)"], name="Daily New Subscriptions (Trials)"), 
                          row=1, col=1)
-fig.update_xaxes(title_text="Date Purchased", row=1, col=1)
+
+fig.update_xaxes(title_text="Date", row=1, col=1)
 fig.update_yaxes(title_text="Number", row=1, col=1)
 
-############## B. all_subs_2 ###############
 
-fig.add_trace(go.Scatter(x=all_subs_2["Date Purchased"], y=all_subs_2["Number of Subscribers"], name="Number of Subscribers"),
-                         row=2, col=1)
-fig.add_trace(go.Scatter(x=all_subs_2["Date Purchased"], y=all_subs_2["Number of Subscribers (DNR-ed)"], name="Number of DNRs"), 
-                         row=2, col=1)
-fig.update_xaxes(title_text="Date Purchased", row=2, col=1)
-fig.update_yaxes(title_text="Number", row=2, col=1)
+
+
+
+############## B. all_subs_2 ###############
+df = all_paid_grped_sub_df
+
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Paid Subscriptions, Daily"], name="Active Paid Subscriptions, Daily"), 
+                         row=1, col=2)
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Paid Subscriptions, Daily (w/o Trials)"], name="Active Paid Subscriptions, Daily (w/o Trials)"), 
+                         row=1, col=2)
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Trialers, Daily"], name="Active Trialers, Daily"), row=1, col=2)
+
+
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["Active DNRs"]/df["Active Paid Subscriptions, Daily"]), name="Active DNRs Percentages"), row=2, col=1)
+
+
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["Active Trialers, Daily"]/df["Active Paid Subscriptions, Daily"]), name="Active Trialers Percentages"), row=2, col=2)
+
+
+fig.update_xaxes(title_text="Date", row=1, col=2)
+fig.update_yaxes(title_text="Number", row=1, col=2)
+
+fig.update_xaxes(title_text="Date", row=2, col=1)
+fig.update_yaxes(title_text="Percentage", row=2, col=1)
+
+fig.update_xaxes(title_text="Date", row=2, col=2)
+fig.update_yaxes(title_text="Percentage", row=2, col=2)
+
 
 ############## C. all_subs_3 ###############
-
+"""
 fig.add_trace(go.Scatter(x=all_subs_3["Date Purchased"], y=all_subs_3["Number of Subscribers"], name="Number of Subscribers"),
                          row=1, col=2)
 fig.add_trace(go.Scatter(x=all_subs_3["Date Purchased"], y=all_subs_3["Number of Subscribers (Cancelled)"], name="Number of Cancelled Subscriptions"), 
@@ -191,6 +321,6 @@ fig.update_yaxes(title_text="Number", row=1, col=2)
 
 
 fig.update_layout(showlegend=False)
-
+"""
 #fig.show()
 fig.write_html('index.html', auto_open=True)
