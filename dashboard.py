@@ -90,7 +90,7 @@ subscribers_over_time_trialers_overlayed["Date Purchased"] = subscribers_over_ti
 
 subscribers_over_time_trialers_overlayed = subscribers_over_time_trialers_overlayed[:-1]
 
-#######################################################################################################################################
+########################################### ACTIVE SUBSCRIPTIONS ########################################################################################
 
 
 all_paid = all_data_df
@@ -141,9 +141,22 @@ for i in range(limit):
 all_paid_grped_sub_df = all_paid_grped_sub_df[:-1]
 all_paid_grped_sub_df = all_paid_grped_sub_df.rename(columns={'purchased_at': 'Date Purchased'})
 
-#############################################################################################################################################
+########################################### PER DAY NO. OF SUBS CANCELLED ###################################################################################
 
+new_subs_status7_df = all_data_df[['purchased_at', 'status']].copy()
+new_subs_status7_df = new_subs_status7_df.dropna()
+new_subs_status7_df = new_subs_status7_df[new_subs_status7_df.status == 7]
 
+del new_subs_status7_df["status"]
+new_subs_status7_df = new_subs_status7_df.rename(columns={'purchased_at': 'Date Purchased'})
+new_subs_status7_df = new_subs_status7_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscriptions (Cancelled)').reset_index()
+
+# *** COMBINED: NEW SUBSCRIPTIONS AND CANCELLED OVER TIME ***
+
+subscribers_over_time_cancelled_overlayed = pd.merge(num_new_subs, new_subs_status7_df, on="Date Purchased", how="outer")
+subscribers_over_time_cancelled_overlayed['Number of Subscriptions (Cancelled)'].fillna(0, inplace=True)
+subscribers_over_time_cancelled_overlayed["Date Purchased"] = subscribers_over_time_cancelled_overlayed["Date Purchased"].apply(date_converter)
+subscribers_over_time_cancelled_overlayed = subscribers_over_time_cancelled_overlayed[:-1]
 
 
 
@@ -267,9 +280,11 @@ print(all_subs_3.head())
 
 fig = make_subplots(rows=2, cols=2, subplot_titles=("Per Day New Subscriptions | Trials Overlayed", 
                                                     "Active Subscriptions",
-                                                    "Active Subscriptions | DNRs Percentages"))
+                                                    "Active Subscriptions | DNRs Percentages",
+                                                    "Active Subscriptions | Trials Percentages",
+                                                    "All Subscriptions | Cancelled, Daily"))
 
-############## A. all_subs ###############
+############## A. ###############
 
 df = subscribers_over_time_trialers_overlayed
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"),
@@ -280,13 +295,9 @@ fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers (Tr
 fig.update_xaxes(title_text="Date", row=1, col=1)
 fig.update_yaxes(title_text="Number", row=1, col=1)
 
+############## B. ###############
 
-
-
-
-############## B. all_subs_2 ###############
 df = all_paid_grped_sub_df
-
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Paid Subscriptions, Daily"], name="Active Paid Subscriptions, Daily"), 
                          row=1, col=2)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Paid Subscriptions, Daily (w/o Trials)"], name="Active Paid Subscriptions, Daily (w/o Trials)"), 
@@ -309,8 +320,18 @@ fig.update_yaxes(title_text="Percentage", row=2, col=1)
 fig.update_xaxes(title_text="Date", row=2, col=2)
 fig.update_yaxes(title_text="Percentage", row=2, col=2)
 
+############## C. ###############
 
-############## C. all_subs_3 ###############
+df = subscribers_over_time_cancelled_overlayed
+
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="New Subscriptions, Daily"),
+                         row=3, col=1)
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscriptions (Cancelled)"], name="Per Day NOS With Status \"Cancelled\""), 
+                         row=3, col=1)
+fig.update_xaxes(title_text="Date", row=3, col=1)
+fig.update_yaxes(title_text="Number", row=3, col=1)
+
+
 """
 fig.add_trace(go.Scatter(x=all_subs_3["Date Purchased"], y=all_subs_3["Number of Subscribers"], name="Number of Subscribers"),
                          row=1, col=2)
