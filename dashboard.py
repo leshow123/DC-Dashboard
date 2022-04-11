@@ -278,11 +278,11 @@ print(all_subs_3.head())
 
 #  Plot data
 
-fig = make_subplots(rows=2, cols=2, subplot_titles=("Per Day New Subscriptions | Trials Overlayed", 
+fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions | Trials Overlayed", 
                                                     "Active Subscriptions",
                                                     "Active Subscriptions | DNRs Percentages",
                                                     "Active Subscriptions | Trials Percentages",
-                                                    "All Subscriptions | Cancelled, Daily"))
+                                                    "All Subscriptions | Cancelled Status, Daily"))
 
 ############## A. ###############
 
@@ -324,7 +324,7 @@ fig.update_yaxes(title_text="Percentage", row=2, col=2)
 
 df = subscribers_over_time_cancelled_overlayed
 
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="New Subscriptions, Daily"),
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"),
                          row=3, col=1)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscriptions (Cancelled)"], name="Per Day NOS With Status \"Cancelled\""), 
                          row=3, col=1)
