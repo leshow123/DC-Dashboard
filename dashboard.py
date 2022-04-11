@@ -324,7 +324,7 @@ fig.update_yaxes(title_text="Percentage", row=2, col=2)
 
 df = subscribers_over_time_cancelled_overlayed
 
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"]),             # , name="Daily New Subscriptions"
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions", showlegend=False),             # , name="Daily New Subscriptions"
                          row=3, col=1)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscriptions (Cancelled)"], name="Per Day NOS With Status \"Cancelled\""), 
                          row=3, col=1)
@@ -344,4 +344,5 @@ fig.update_yaxes(title_text="Number", row=1, col=2)
 fig.update_layout(showlegend=False)
 """
 #fig.show()
+fig.update_layout(showlegend=True)
 fig.write_html('index.html', auto_open=True)
