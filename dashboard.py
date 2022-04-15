@@ -168,17 +168,17 @@ subscribers_over_time_cancelled_overlayed = subscribers_over_time_cancelled_over
 
 #  PLOT DATA
 
-fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions | Trials Overlayed", 
+fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions | Trials", 
                                                     "Paid Subscriptions",
                                                     "Active Subscriptions | DNRs Percentages",
-                                                    #"Active Subscriptions | Trials Percentages",
-                                                    "Per Day New Subscriptions | Cancelled Status Overlayed"))
+                                                    "",
+                                                    "Per Day New Subscriptions | Status \'Cancelled\'"))
 
 ############## A. ###############
 
 df = subscribers_over_time_trialers_overlayed
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"),
-                         row=1, col=1)
+#fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"),
+#                         row=1, col=1)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers (Trialers)"], name="Daily New Subscriptions (Trials)"), 
                          row=1, col=1)
 
@@ -214,8 +214,8 @@ fig.update_yaxes(title_text="Percentage", row=2, col=1)
 
 df = subscribers_over_time_cancelled_overlayed
 
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions", showlegend=False),             # , name="Daily New Subscriptions"
-                         row=3, col=1)
+#fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions", showlegend=False), 
+#                         row=3, col=1)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscriptions (Cancelled)"], name="Per Day NOS With Status \"Cancelled\""), 
                          row=3, col=1)
 fig.update_xaxes(title_text="Date", row=3, col=1)
