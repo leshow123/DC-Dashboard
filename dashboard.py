@@ -203,11 +203,11 @@ print(all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']])
 
 #  PLOT DATA
 
-fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions | Trials", 
-                                                    "Paid Subscriptions",
-                                                    "Active Subscriptions | DNRs Percentages",
-                                                    "Active Subscriptions | Trialing",
-                                                    "Per Day New Subscriptions | Status \'Cancelled\'"))
+fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions - Commenced as Trials", 
+                                                    "Paid Subscriptions | Active Paid Subscriptions (APS)",
+                                                    "APS - DNRs Percentages",
+                                                    "APS - Trialing",
+                                                    "Per Day New Subscriptions - Status \'Cancelled\'"))
 
 ############## A. ###############
 
