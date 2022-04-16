@@ -242,7 +242,7 @@ fig.update_xaxes(title_text="Date", row=2, col=1)
 fig.update_yaxes(title_text="Percentage", row=2, col=1)
 
 fig.update_xaxes(title_text="Date", row=2, col=2)
-fig.update_yaxes(title_text="Percentage", row=2, col=2)
+fig.update_yaxes(title_text="Number", row=2, col=2)
 
 ############## C. ###############
 
