@@ -97,8 +97,6 @@ subscribers_over_time_trialers_overlayed = subscribers_over_time_trialers_overla
 
 all_paid = all_data_df
 
-#print(all_paid, "\n *****************************************")
-
 # We need two separate tables (one as index) to achieve the aim. This is one.
 all_paid_grped_sub_df = all_paid.groupby(['purchased_at']).size().to_frame(name="No. of Paid Subscriptions").reset_index()
 
@@ -165,20 +163,55 @@ subscribers_over_time_cancelled_overlayed["Date Purchased"] = subscribers_over_t
 subscribers_over_time_cancelled_overlayed = subscribers_over_time_cancelled_overlayed[:-1]
 
 
+#############################################################################################################################################################
+
+all_data_sub_df = all_data_df
+all_data_sub_df = all_data_sub_df.groupby(['purchased_at'])
+all_data_sub_df = all_data_sub_df.apply(pd.DataFrame)
+#print(all_data_sub_df, "\n ***************************************** \n\n")
+
+all_data_sub_df['purchased_at'] = all_data_sub_df['purchased_at'].astype(str)
+all_data_sub_df['purchased_at'] = all_data_sub_df['purchased_at'].apply(date_converter)
+all_data_sub_df['paid_until'] = all_data_sub_df['paid_until'].astype(str)
+all_data_sub_df["paid_until"] = all_data_sub_df["paid_until"].apply(cut7)
+#all_data_sub_df['paid_until'] = all_data_sub_df['paid_until'].apply(date_converter)
+all_data_sub_df['subscriber_since'] = all_data_sub_df['subscriber_since'].astype(str)
+all_data_sub_df["subscriber_since"] = all_data_sub_df["subscriber_since"].apply(cut7)
+#all_data_sub_df['subscriber_since'] = all_data_sub_df['subscriber_since'].apply(date_converter)
+
+#print(all_data_sub_df)
+#exit(1)
+
+# Note:
+#  
+# ACTIVE TRIAL(ER)S - to mean those about to or may not make the transition to paid subscription.
+# ACTIVE TRIAL(ER)S = {subscriber_since = NULL, was_trial = TRUE, [paid_until != NULL]}
+#   
+all_data_sub_df_S_SINCE_IS_NULL = all_data_sub_df[all_data_sub_df.subscriber_since == "nan"]      #date.fromisoformat("9999-12-31")
+all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE = all_data_sub_df_S_SINCE_IS_NULL[all_data_sub_df_S_SINCE_IS_NULL.was_trial == "t"]
+all_data_sub_df_ACTIVE_TRIALERS = \
+    all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE[all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE.paid_until != "nan"]
+
+#all_data_sub_df_ACTIVE_TRIALERS.sort_values(['purchased_at'], ascending=True, inplace=True)
+
+num_of_active_trialers = all_data_sub_df_ACTIVE_TRIALERS.groupby(['purchased_at']).size().to_frame(name="Active Trialers").reset_index()
+num_of_active_trialers = num_of_active_trialers.rename(columns={'purchased_at': 'Date Purchased'})
+num_of_active_trialers = num_of_active_trialers[:-1]
+
+print(num_of_active_trialers, "\n\n")   
+print(all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']])
 
 #  PLOT DATA
 
 fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions | Trials", 
                                                     "Paid Subscriptions",
                                                     "Active Subscriptions | DNRs Percentages",
-                                                    "",
+                                                    "Active Subscriptions | Trialing",
                                                     "Per Day New Subscriptions | Status \'Cancelled\'"))
 
 ############## A. ###############
 
 df = subscribers_over_time_trialers_overlayed
-#fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"),
-#                         row=1, col=1)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers (Trialers)"], name="Daily New Subscriptions (Trials)"), 
                          row=1, col=1)
 
@@ -200,6 +233,7 @@ fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["Active Paid Subs
 
 #fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["Active Trialers, Daily"]/df["Active Paid Subscriptions, Daily"]), name="Active Trialers Percentages"), row=2, col=2)
 
+fig.add_trace(go.Scatter(x=num_of_active_trialers["Date Purchased"], y=num_of_active_trialers["Active Trialers"], name="Active Trialers, Daily"), row=2, col=2)
 
 fig.update_xaxes(title_text="Date", row=1, col=2)
 fig.update_yaxes(title_text="Number", row=1, col=2)
@@ -207,15 +241,12 @@ fig.update_yaxes(title_text="Number", row=1, col=2)
 fig.update_xaxes(title_text="Date", row=2, col=1)
 fig.update_yaxes(title_text="Percentage", row=2, col=1)
 
-#fig.update_xaxes(title_text="Date", row=2, col=2)
-#fig.update_yaxes(title_text="Percentage", row=2, col=2)
+fig.update_xaxes(title_text="Date", row=2, col=2)
+fig.update_yaxes(title_text="Percentage", row=2, col=2)
 
 ############## C. ###############
 
 df = subscribers_over_time_cancelled_overlayed
-
-#fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions", showlegend=False), 
-#                         row=3, col=1)
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscriptions (Cancelled)"], name="Per Day NOS With Status \"Cancelled\""), 
                          row=3, col=1)
 fig.update_xaxes(title_text="Date", row=3, col=1)
