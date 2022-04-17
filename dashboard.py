@@ -50,8 +50,6 @@ track_interest_sub_df["purchased_at"] = track_interest_sub_df["purchased_at"].ap
 all_data_df = pd.merge(track_interest_sub_df, subscriptions_sub_df, on="subscription_id", how="outer")
 all_data_df['purchased_at'].fillna(0, inplace=True)
 all_data_df = all_data_df[all_data_df.purchased_at != 0]
-#print(all_data_df.head())
-
 
 # *** NEW SUBSCRIBERS OVER TIME *** 
 
@@ -64,7 +62,7 @@ num_new_subs = new_subs_df.groupby(['Date Purchased']).size().to_frame(name = 'N
  
 num_new_subs['Number of Subscribers (Trialers)'] = 0
 
-# **** NEW TRIALERS OVER TIME ***
+# **** SUBSCRIPTIONS COMMENCING AS TRIALING OVER THE PERIOD ***
 
 new_subs_from_trial_df = all_data_df[['purchased_at', 'was_trial']].copy()
 new_subs_from_trial_df = new_subs_from_trial_df.dropna()
@@ -187,25 +185,16 @@ num_of_active_trialers = all_data_sub_df_ACTIVE_TRIALERS.groupby(['purchased_at'
 num_of_active_trialers = num_of_active_trialers.rename(columns={'purchased_at': 'Date Purchased'})
 num_of_active_trialers = num_of_active_trialers[:-1]
 
-#print(num_new_subs_recalled)
-#print(num_of_active_trialers, "\n\n")
-
-#percentage_of_active_trialers = pd.merge(all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']], \
-#    num_of_active_trialers, on="Date Purchased", how="right")
-
 APS = all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']]
-
-#APS['Date Purchased'] = APS['Date Purchased'].astype(str)
 num_of_active_trialers['Date Purchased'] = num_of_active_trialers['Date Purchased'].astype(str)
-# Convert Dataframe to Dictionary With One Column as key
+
+# Convert Dataframe to Dictionary With one of the columns as key
 AT_dict_keyed_by_Date_Purchased = num_of_active_trialers.set_index('Date Purchased').T.to_dict('list')
 APS_dict_keyed_by_Date_Purchased = APS.set_index('Date Purchased').T.to_dict('list')
 
-print(APS, "\n\n") 
-print(AT_dict_keyed_by_Date_Purchased, "\n\n")
-print(APS_dict_keyed_by_Date_Purchased, "\n\n")
-
-#print(percentage_of_active_trialers)
+#print(APS, "\n\n") 
+#print(AT_dict_keyed_by_Date_Purchased, "\n\n")
+#print(APS_dict_keyed_by_Date_Purchased, "\n\n")
 
 # The idea is to lookup the corresponding values in APS for each date existing in AT
 # In essence, we are comparing two "variable length" tables; there are likley more
@@ -220,7 +209,7 @@ for key in APS_dict_keyed_by_Date_Purchased:
         APS_value = APS_value.pop()
         APS_dict_keyed_by_Date_Purchased[key].append(APS_value)
 
-print(APS_dict_keyed_by_Date_Purchased, "\n\n")
+#print(APS_dict_keyed_by_Date_Purchased, "\n\n")
 
 # Use the keys as the index (i.e., ...orient='index'...), where 'AT_percentages_view'
 # facilitates graphing ACTIVE TRIALERS %ages
@@ -229,7 +218,8 @@ AT_percentages_view = pd.DataFrame.from_dict(APS_dict_keyed_by_Date_Purchased, o
 AT_percentages_view = AT_percentages_view.reset_index()
 AT_percentages_view = AT_percentages_view.rename(columns = {'index':'Date'})
 AT_percentages_view['Active Trialers'].fillna(0, inplace=True)
-print(AT_percentages_view)
+
+#print(AT_percentages_view)
 
 
 #  PLOT DATA
