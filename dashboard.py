@@ -77,8 +77,6 @@ del new_subs_from_trial_df["was_trial"]
 new_subs_from_trial_df = new_subs_from_trial_df.rename(columns={'purchased_at': 'Date Purchased'})
 num_new_subs_from_trial = new_subs_from_trial_df.groupby(['Date Purchased']).size().to_frame(name = 'Number of Subscribers (Trialers)').reset_index()
 
-# *** COMBINED: NEW SUBSCRIPTIONS AND TRIALS OVER TIME ***
-
 subscribers_over_time_trialers_overlayed = pd.merge(num_new_subs, num_new_subs_from_trial, on="Date Purchased", how="outer")
 
 # There'll two columns with the lede, "Number of Subscribers (Trialers)..."
@@ -93,7 +91,6 @@ subscribers_over_time_trialers_overlayed["Date Purchased"] = subscribers_over_ti
 subscribers_over_time_trialers_overlayed = subscribers_over_time_trialers_overlayed[:-1]
 
 ########################################### ACTIVE SUBSCRIPTIONS ########################################################################################
-
 
 all_paid = all_data_df
 
@@ -147,7 +144,7 @@ all_paid_grped_sub_df = all_paid_grped_sub_df[:-1]
 all_paid_grped_sub_df = all_paid_grped_sub_df.rename(columns={'purchased_at': 'Date Purchased'})
 
 
-########################################### PER DAY NO. OF SUBS WITH STATUS 'CANCELLED' ###################################################################################
+########################################### PER DAY NO. OF SUBS WITH STATUS 'CANCELLED' ######################################################################
 
 new_subs_status7_df = all_data_df[['purchased_at', 'status']].copy()
 new_subs_status7_df = new_subs_status7_df.dropna()
@@ -163,51 +160,86 @@ subscribers_over_time_cancelled_overlayed["Date Purchased"] = subscribers_over_t
 subscribers_over_time_cancelled_overlayed = subscribers_over_time_cancelled_overlayed[:-1]
 
 
-#############################################################################################################################################################
+###########################################              ACTIVE TRIALERS              #########################################################################
 
 all_data_sub_df = all_data_df
 all_data_sub_df = all_data_sub_df.groupby(['purchased_at'])
 all_data_sub_df = all_data_sub_df.apply(pd.DataFrame)
-#print(all_data_sub_df, "\n ***************************************** \n\n")
 
 all_data_sub_df['purchased_at'] = all_data_sub_df['purchased_at'].astype(str)
 all_data_sub_df['purchased_at'] = all_data_sub_df['purchased_at'].apply(date_converter)
 all_data_sub_df['paid_until'] = all_data_sub_df['paid_until'].astype(str)
 all_data_sub_df["paid_until"] = all_data_sub_df["paid_until"].apply(cut7)
-#all_data_sub_df['paid_until'] = all_data_sub_df['paid_until'].apply(date_converter)
 all_data_sub_df['subscriber_since'] = all_data_sub_df['subscriber_since'].astype(str)
 all_data_sub_df["subscriber_since"] = all_data_sub_df["subscriber_since"].apply(cut7)
-#all_data_sub_df['subscriber_since'] = all_data_sub_df['subscriber_since'].apply(date_converter)
-
-#print(all_data_sub_df)
-#exit(1)
 
 # Note:
 #  
 # ACTIVE TRIAL(ER)S - to mean those about to or may not make the transition to paid subscription.
 # ACTIVE TRIAL(ER)S = {subscriber_since = NULL, was_trial = TRUE, [paid_until != NULL]}
 #   
-all_data_sub_df_S_SINCE_IS_NULL = all_data_sub_df[all_data_sub_df.subscriber_since == "nan"]      #date.fromisoformat("9999-12-31")
+all_data_sub_df_S_SINCE_IS_NULL = all_data_sub_df[all_data_sub_df.subscriber_since == "nan"]
 all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE = all_data_sub_df_S_SINCE_IS_NULL[all_data_sub_df_S_SINCE_IS_NULL.was_trial == "t"]
 all_data_sub_df_ACTIVE_TRIALERS = \
     all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE[all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE.paid_until != "nan"]
-
-#all_data_sub_df_ACTIVE_TRIALERS.sort_values(['purchased_at'], ascending=True, inplace=True)
 
 num_of_active_trialers = all_data_sub_df_ACTIVE_TRIALERS.groupby(['purchased_at']).size().to_frame(name="Active Trialers").reset_index()
 num_of_active_trialers = num_of_active_trialers.rename(columns={'purchased_at': 'Date Purchased'})
 num_of_active_trialers = num_of_active_trialers[:-1]
 
-print(num_of_active_trialers, "\n\n")   
-print(all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']])
+#print(num_new_subs_recalled)
+#print(num_of_active_trialers, "\n\n")
+
+#percentage_of_active_trialers = pd.merge(all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']], \
+#    num_of_active_trialers, on="Date Purchased", how="right")
+
+APS = all_paid_grped_sub_df[['Date Purchased', 'Active Paid Subscriptions']]
+
+#APS['Date Purchased'] = APS['Date Purchased'].astype(str)
+num_of_active_trialers['Date Purchased'] = num_of_active_trialers['Date Purchased'].astype(str)
+# Convert Dataframe to Dictionary With One Column as key
+AT_dict_keyed_by_Date_Purchased = num_of_active_trialers.set_index('Date Purchased').T.to_dict('list')
+APS_dict_keyed_by_Date_Purchased = APS.set_index('Date Purchased').T.to_dict('list')
+
+print(APS, "\n\n") 
+print(AT_dict_keyed_by_Date_Purchased, "\n\n")
+print(APS_dict_keyed_by_Date_Purchased, "\n\n")
+
+#print(percentage_of_active_trialers)
+
+# The idea is to lookup the corresponding values in APS for each date existing in AT
+# In essence, we are comparing two "variable length" tables; there are likley more
+# dates on which there're active paid subs. than are active trialers. However, 
+# pd.merge(...,how="outer"), which is equiv. to a "outer join" will yield impaired 
+# results. It's more convenient, however, to implement the idea as follows to make 
+# graphing easy.
+
+for key in APS_dict_keyed_by_Date_Purchased:
+    APS_value = AT_dict_keyed_by_Date_Purchased.get(key,None)
+    if APS_value != None:
+        APS_value = APS_value.pop()
+        APS_dict_keyed_by_Date_Purchased[key].append(APS_value)
+
+print(APS_dict_keyed_by_Date_Purchased, "\n\n")
+
+# Use the keys as the index (i.e., ...orient='index'...), where 'AT_percentages_view'
+# facilitates graphing ACTIVE TRIALERS %ages
+ 
+AT_percentages_view = pd.DataFrame.from_dict(APS_dict_keyed_by_Date_Purchased, orient='index', columns=['Active Paid Subscriptions', 'Active Trialers'])
+AT_percentages_view = AT_percentages_view.reset_index()
+AT_percentages_view = AT_percentages_view.rename(columns = {'index':'Date'})
+AT_percentages_view['Active Trialers'].fillna(0, inplace=True)
+print(AT_percentages_view)
+
 
 #  PLOT DATA
 
 fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions - Commenced as Trials", 
                                                     "Paid Subscriptions | Active Paid Subscriptions (APS)",
                                                     "APS - DNRs Percentages",
-                                                    "APS - Trialing",
-                                                    "Per Day New Subscriptions - Status \'Cancelled\'"))
+                                                    "APS - Trialing (i.e., \'Active Trialers\')",
+                                                    "Per Day New Subscriptions - Status \'Cancelled\'",
+                                                    "APS - Trialing (Daily Percentage)"))
 
 ############## A. ###############
 
@@ -230,10 +262,10 @@ fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Paid Subscriptions
 
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["Active Paid Subscriptions, DNRs=True"]/df["Active Paid Subscriptions"]), name="Active DNRs Percentages"), row=2, col=1)
 
-
-#fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["Active Trialers, Daily"]/df["Active Paid Subscriptions, Daily"]), name="Active Trialers Percentages"), row=2, col=2)
-
 fig.add_trace(go.Scatter(x=num_of_active_trialers["Date Purchased"], y=num_of_active_trialers["Active Trialers"], name="Active Trialers, Daily"), row=2, col=2)
+
+fig.add_trace(go.Scatter(x=AT_percentages_view["Date"], y=100.0 * (AT_percentages_view["Active Trialers"]/AT_percentages_view["Active Paid Subscriptions"])
+, name="Active Trialers, Daily Percentages"), row=3, col=2)
 
 fig.update_xaxes(title_text="Date", row=1, col=2)
 fig.update_yaxes(title_text="Number", row=1, col=2)
@@ -243,6 +275,9 @@ fig.update_yaxes(title_text="Percentage", row=2, col=1)
 
 fig.update_xaxes(title_text="Date", row=2, col=2)
 fig.update_yaxes(title_text="Number", row=2, col=2)
+
+fig.update_xaxes(title_text="Date", row=3, col=2)
+fig.update_yaxes(title_text="Percentage", row=3, col=2)
 
 ############## C. ###############
 
