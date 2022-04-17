@@ -236,10 +236,10 @@ print(AT_percentages_view)
 
 fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions - Commenced as Trials", 
                                                     "Paid Subscriptions | Active Paid Subscriptions (APS)",
-                                                    "APS - DNRs Percentages",
-                                                    "APS - Trialing (i.e., \'Active Trialers\')",
+                                                    "DNRs - Daily Percentage of APS",
+                                                    "\'Active Trialers\'",
                                                     "Per Day New Subscriptions - Status \'Cancelled\'",
-                                                    "APS - Trialing (Daily Percentage)"))
+                                                    "Active Trialers - Daily Percentage of APS"))
 
 ############## A. ###############
 
