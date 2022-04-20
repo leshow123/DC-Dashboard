@@ -418,17 +418,27 @@ print(AT_percentages_view, "\n")
 
 #  PLOT DATA
 
-fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions - Commenced as Trials", 
+fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions", 
                                                     "Paid Subscriptions | Active Paid Subscriptions (APS)",
                                                     "DNRs - Daily Percentages of APS",
                                                     "Active Trialers, PiT",
-                                                    #"Per Day New Subscriptions - Status \'Cancelled\'",
+                                                    "", #"Per Day New Subscriptions - Status \'Cancelled\'",
                                                     "Active Trialers - Daily Percentage of APS"))
 
 ############## A. ###############
 
+"""
 df = new_subs_commenced_as_trial_df_ACTUAL
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["NoS Commenced as Trialers"], name="Daily Subscriptions Commenced as Trials"), 
+                         row=1, col=1)
+
+fig.update_xaxes(title_text="Date", row=1, col=1)
+fig.update_yaxes(title_text="Number", row=1, col=1)
+
+"""
+
+df = num_new_subs
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"), 
                          row=1, col=1)
 
 fig.update_xaxes(title_text="Date", row=1, col=1)
