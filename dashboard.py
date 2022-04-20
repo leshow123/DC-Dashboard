@@ -59,23 +59,15 @@ def timedelta_convert(n):
 
 # *** LOAD DATA ***
 
-#track_interest_df = pd.read_csv("track_interest.csv")
 subscriptions_df = pd.read_csv("subscriptions.csv")
-
-#print("Rows in TRACK_INTEREST_DF: ", len(track_interest_df.index), "\n")
-#print("Rows in SUBSCRIPTIONS_DF: ", len(subscriptions_df.index), "\n")
-
-subscriptions_sub_df = pd.DataFrame(subscriptions_df[['id', 'stripe_id', 'paid_until', 'was_trial', 'subscriber_since', 'do_not_renew', 'status', 'days_in_subscription']])
+subscriptions_sub_df = \
+    pd.DataFrame(subscriptions_df[['id', 'stripe_id', 'paid_until', 'was_trial', 'subscriber_since', 
+    'do_not_renew', 'status', 'days_in_subscription']])
 subscriptions_sub_df = subscriptions_sub_df.rename(columns={'id': 'subscription_id'})
-
-#print("Rows in SUBSCRIPTIONS_SUB_DF: ", len(subscriptions_sub_df.index), "\n")
-
 all_data_df = subscriptions_sub_df
 
 
-#
 # *** NEW SUBSCRIBERS, DAILY, OVER THE PERIOD *** 
-#
 
 new_subs_df = pd.DataFrame(all_data_df['subscriber_since'])
 new_subs_df = new_subs_df.rename(columns={'subscriber_since': 'Date Purchased'})
@@ -89,86 +81,19 @@ num_new_subs = num_new_subs[:-1]
 print("\n ******************** num_new_subs ********************** \n")
 print(num_new_subs, "\n")
 
-
-#
-# **** SUBSCRIPTIONS COMMENCING AS TRIALING OVER THE PERIOD ***** 
-#      
-#      At this point, we dont care whether the user's gonna
-#      make the jump to fully paid or not. When we do care,
-#      we graph ACTIVE TRIALERS later on.
-#
-
 """
-1. days_in_subscription is needed to compute the subscriber_since (a.k.a Date Purchased),
-   i.e., paid_until - days_in_subscription, in cases whereby 
-   {was_trial == t; paid_until != NULL; subscriber_since == NULL}.
+1. days_in_subscription is needed to compute the subscriber_since 
+   (a.k.a Date Purchased), i.e., paid_until - days_in_subscription, 
+   in cases whereby {was_trial == t; paid_until != NULL; 
+   subscriber_since == NULL}.
 
-2. But there are also cases where {paid_until == NULL; subscriber_since == NULL;
-   days_in_subscription == 0}. Coupons, I guess? Or "visitors" (BUT HOW'D THEY GET
-   ON THE SUBSCRIPTION TABLE). These are dropped, since we can't fit them to a 
-   particular date in the timeline.
-
-"""
-"""
-new_subs_commenced_as_trial_df = all_data_df[['subscriber_since','paid_until','days_in_subscription','was_trial']].copy()
-new_subs_commenced_as_trial_df["subscriber_since"].fillna('', inplace=True) 
-new_subs_commenced_as_trial_df["subscriber_since"] = new_subs_commenced_as_trial_df["subscriber_since"].astype(str)
-new_subs_commenced_as_trial_df["subscriber_since"] = new_subs_commenced_as_trial_df["subscriber_since"].apply(cut19)
-new_subs_commenced_as_trial_df["paid_until"] = new_subs_commenced_as_trial_df["paid_until"].astype(str)
-new_subs_commenced_as_trial_df["paid_until"] = new_subs_commenced_as_trial_df["paid_until"].apply(cut19)
-new_subs_commenced_as_trial_df["paid_until"] = new_subs_commenced_as_trial_df["paid_until"].apply(format_date3)
-new_subs_commenced_as_trial_df["days_in_subscription"] = new_subs_commenced_as_trial_df["days_in_subscription"].apply(timedelta_convert)
-
-#print(new_subs_commenced_as_trial_df, "\n ******************************************")
-
-# Take out those described in 2. above                          TODO How many are there?
-new_subs_commenced_as_trial_df = new_subs_commenced_as_trial_df[new_subs_commenced_as_trial_df.days_in_subscription != timedelta_convert(0)]
-#print(new_subs_commenced_as_trial_df, "\n ******************************************")
-
-new_subs_commenced_as_trial_df = \
-    new_subs_commenced_as_trial_df.assign(date_purchased = lambda x: x['paid_until'] - x['days_in_subscription'])
-#print(new_subs_commenced_as_trial_df, "\n ******************************************")
-"""
-
-"""
-There's a 2hr slack added to the expiration (i.e., paid_until). Why is that @MarkJones?
-Anyway, TODO: Compensate for this in via timedelta's HH:MM:SS for (alias) 'date_purchased'.
-Otherwise, we'd have to take 'date_purchased' as a close approx. of subscriber_since.
+2. There are also {paid_until == NULL; subscriber_since == NULL;
+   days_in_subscription == 0}. Coupons, I guess?. These are dropped, 
+   since we can't fit them to a timeline.
 
 """
 
-"""
-# Now that EVERY subscription has been fitted to a timeline, from the previous steps,
-# we can then focus attention. 
-
-new_subs_commenced_as_trial_df = new_subs_commenced_as_trial_df[new_subs_commenced_as_trial_df.was_trial == "t"]
-
-#print(len(new_subs_commenced_as_trial_df.index), "\n ******************************************")
-#print(new_subs_commenced_as_trial_df)
-
-new_subs_commenced_as_trial_df_ACTUAL = new_subs_commenced_as_trial_df[['date_purchased','was_trial']].copy()
-new_subs_commenced_as_trial_df_ACTUAL = new_subs_commenced_as_trial_df_ACTUAL.reset_index()
-# Delete the old index
-del new_subs_commenced_as_trial_df_ACTUAL['index']
-new_subs_commenced_as_trial_df_ACTUAL['date_purchased'] = new_subs_commenced_as_trial_df_ACTUAL['date_purchased'].astype(str)
-new_subs_commenced_as_trial_df_ACTUAL['date_purchased'] = new_subs_commenced_as_trial_df_ACTUAL['date_purchased'].apply(cut7)
-
-#print(len(new_subs_commenced_as_trial_df_ACTUAL.index), "\n ******************************************")
-#print(new_subs_commenced_as_trial_df_ACTUAL)
-
-# Delete the 'was_trial' column, currently holding trues-only, and build a "trues-only" frequency
-# table.
-  
-del new_subs_commenced_as_trial_df_ACTUAL["was_trial"]
-new_subs_commenced_as_trial_df_ACTUAL = new_subs_commenced_as_trial_df_ACTUAL.rename(columns={'date_purchased': 'Date Purchased'})
-new_subs_commenced_as_trial_df_ACTUAL = \
-    new_subs_commenced_as_trial_df_ACTUAL.groupby(['Date Purchased']).size().to_frame(name = 'NoS Commenced as Trialers').reset_index()
-
-print("\n ******************** new_subs_commenced_as_trial_df_ACTUAL ********************** \n")
-print(new_subs_commenced_as_trial_df_ACTUAL, "\n")
-"""
-
-########################################### ACTIVE SUBSCRIPTIONS ########################################################################################
+########################################### ACTIVE SUBSCRIPTIONS #############################################################
 
 all_paid = all_data_df
 
@@ -206,7 +131,8 @@ for i in range(limit):
     # We need to iterate through the dates
     this_date = all_paid_grped_sub_df['subscriber_since'][i]
 
-    # The idea is to look-back, obtain qualifying transactions up until 'this_date', and extract necessary views.
+    # The idea is to look-back, obtain qualifying transactions up until 'this_date', and extract 
+    # necessary views.
 
     # Get "PAID SUBSCRIPTIONS" (i.e., those that have 'subscriber_since' set) on each day
     paid_subs_b4_this_date = all_paid_grped_by_purchased_at[all_paid_grped_by_purchased_at.subscriber_since < date.fromisoformat(this_date)]
@@ -219,9 +145,8 @@ for i in range(limit):
 
     # ACTIVE PAID SUBS - COMMENCED AS DNR=t
     #
-    # Caveat: Transitions from DNR=t to DNR=f (i.e., yes, renew) and vice versa are not taken into
-    #         account.
-    #
+    # NOTE: Transitions from DNR=t to DNR=f (i.e., yes, renew) and vice versa are not taken into
+    #       account.
     active_paid_subs_b4_this_purchased_at_date_ACTIVE_DNRs = active_paid_subs_b4_this_date[active_paid_subs_b4_this_date.do_not_renew == "t"]
     
     all_paid_grped_sub_df["Paid Subscriptions"][i] = paid_subs_b4_this_date.count()["paid_until"]
@@ -255,14 +180,11 @@ subscribers_over_time_cancelled_overlayed = subscribers_over_time_cancelled_over
 
 """
 
-###########################################              ACTIVE TRIALERS              #########################################################################
+###########################################     ACTIVE TRIALERS    ################################################################
 
 all_data_sub_df = all_data_df
 all_data_sub_df = all_data_sub_df.groupby(['subscriber_since'])
 all_data_sub_df = all_data_sub_df.apply(pd.DataFrame)
-
-#print(len(all_data_sub_df.index), "\n **************** HERE 1 *************************")
-#print(all_data_sub_df)
 
 # Make a copy. We need it for computing a breakdown of Active Trialers
 # for each day (i.e., paid_until - days_in_subscription).
@@ -280,10 +202,6 @@ all_data_sub_df['paid_until'] = all_data_sub_df['paid_until'].astype(str)
 all_data_sub_df["paid_until"] = all_data_sub_df["paid_until"].apply(cut7)
 all_data_sub_df['subscriber_since'] = all_data_sub_df['subscriber_since'].astype(str)
 
-#print(len(all_data_sub_df.index), "\n **************** HERE 2 **************************")
-#print(all_data_sub_df)
-
-
 # NOTE:
 #  
 # ACTIVE TRIAL(ER)S, to mean, those about to or may not make the 
@@ -293,15 +211,12 @@ all_data_sub_df['subscriber_since'] = all_data_sub_df['subscriber_since'].astype
 #   
 all_data_sub_df_S_SINCE_IS_NULL = all_data_sub_df[all_data_sub_df.subscriber_since == "9999-12-31"]
 
-#print(len(all_data_sub_df_S_SINCE_IS_NULL.index), "\n")
-#print(all_data_sub_df_S_SINCE_IS_NULL)
-
 all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE = all_data_sub_df_S_SINCE_IS_NULL[all_data_sub_df_S_SINCE_IS_NULL.was_trial == "t"]
 all_data_sub_df_ACTIVE_TRIALERS = \
     all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE[all_data_sub_df_S_SINCE_IS_NULL_and_WAS_TRIAL_IS_TRUE.paid_until != "nan"]
 
 # Per day breakdown based on paid_until and days_in_subscription. 
-# Recall, paid_until - days_in_subscription ~= purchase date.
+# Recall, paid_until - days_in_subscription ~= purchase date/day joined.
 
 all_data_sub_df_ACTIVE_TRIALERS = \
     all_data_sub_df_ACTIVE_TRIALERS.assign(date_purchased = lambda x: x['paid_until_format1'] - x['days_in_subscription'])
@@ -316,10 +231,9 @@ num_of_active_trialers = num_of_active_trialers.rename(columns={'date_purchased'
 
 print("\n *********************  num_of_active_trialers  *******************************")
 print(num_of_active_trialers, "\n")
-#print(all_paid_grped_sub_df, "\n *****************************************************")
 
 
-############### ACTIVE TRIALER PERCENTAGE OF ... #######################
+################################### ACTIVE TRIALER PERCENTAGE OF ... ####################################################
 
 """
 Active Trialers (AT) %ages are computed from the ratio of AT to
@@ -339,28 +253,21 @@ paid_until - days_in_subscription ~= purchase date / date_joined
 all_data_sub_df_COPY = all_data_sub_df_COPY[all_data_sub_df_COPY.days_in_subscription != timedelta_convert(0)]
 all_data_sub_df_COPY = \
     all_data_sub_df_COPY.assign(date_joined = lambda x: x['paid_until_format1'] - x['days_in_subscription'])
-
-#all_data_sub_df_COPY.to_csv('all_data_sub_df_COPY.csv')
-#print("\n ************************************ \n", all_data_sub_df_COPY)
-
 all_data_sub_df_COPY["date_joined"] = all_data_sub_df_COPY["date_joined"].astype(str)
 all_data_sub_df_COPY["date_joined"] = all_data_sub_df_COPY["date_joined"].apply(cut7)
-
-#print("\n ************************************ \n", all_data_sub_df_COPY)
 
 subcriptions_date_joined = all_data_sub_df_COPY[["date_joined"]].copy()
 subcriptions_date_joined = subcriptions_date_joined.reset_index()
 del subcriptions_date_joined['index']
-#print("\n ************************************ \n", subcriptions_date_joined)
-#subcriptions_date_joined.to_csv('joined_fqt.csv')
 
 # Build the frequency table
+
 subcriptions_date_joined = subcriptions_date_joined.groupby(['date_joined']).size().to_frame(name="NoS").reset_index()
 
 # Remove that NaT (for the test dataset, 69 in total. These are subscriptions 
 # with non-zero days_in_subscription but with paid_until == null. 
 # Meaning, we can't compute dat_joined for them. COUPONS?
-#  
+  
 subcriptions_date_joined = subcriptions_date_joined[:-1]
 
 """
@@ -378,16 +285,9 @@ AS = AS.rename(columns = {'date_joined':'Date Purchased'})
 num_of_active_trialers = num_of_active_trialers.rename(columns={'date_purchased': 'Date Purchased'})
 num_of_active_trialers['Date Purchased'] = num_of_active_trialers['Date Purchased'].astype(str)
 
-#print("\n ************************************ \n", AS, "\n")
-
-#print("\n ************************************ \n", num_of_active_trialers)
-
 # Convert Dataframe to Dictionary With one of the columns as key
 AT_dict_keyed_by_Date_Purchased = num_of_active_trialers.set_index('Date Purchased').T.to_dict('list')
 AS_dict_keyed_by_Date_Purchased = AS.set_index('Date Purchased').T.to_dict('list')
-
-#print(AT_dict_keyed_by_Date_Purchased, "\n\n")
-#print(AS_dict_keyed_by_Date_Purchased, "\n\n")
 
 # NOTE:
 # 
@@ -406,12 +306,11 @@ for key in AS_dict_keyed_by_Date_Purchased:
         AS_value = AS_value.pop()
         AS_dict_keyed_by_Date_Purchased[key].append(AS_value)
 
-#print(AS_dict_keyed_by_Date_Purchased, "\n\n")
-
 # Use the keys (i.e., dates) as the index (i.e., ...orient='index'...), where 'AT_percentages_view'
 # facilitates graphing ACTIVE TRIALERS %ages
  
-AT_percentages_view = pd.DataFrame.from_dict(AS_dict_keyed_by_Date_Purchased, orient='index', columns=['All Other Subscriptions', 'Active Trialers'])
+AT_percentages_view = \
+    pd.DataFrame.from_dict(AS_dict_keyed_by_Date_Purchased, orient='index', columns=['All Other Subscriptions', 'Active Trialers'])
 AT_percentages_view = AT_percentages_view.reset_index()
 AT_percentages_view = AT_percentages_view.rename(columns = {'index':'Date'})
 AT_percentages_view['Active Trialers'].fillna(0, inplace=True) # You never know.
@@ -432,16 +331,6 @@ fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions",
                                                     ))
 
 ############## A. ###############
-
-"""
-df = new_subs_commenced_as_trial_df_ACTUAL
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["NoS Commenced as Trialers"], name="Daily Subscriptions Commenced as Trials"), 
-                         row=1, col=1)
-
-fig.update_xaxes(title_text="Date", row=1, col=1)
-fig.update_yaxes(title_text="Number", row=1, col=1)
-
-"""
 
 df = num_new_subs
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"), 
