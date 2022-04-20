@@ -358,16 +358,16 @@ fig.add_trace(go.Scatter(x=num_of_active_trialers["Date Purchased"], y=num_of_ac
 fig.add_trace(go.Scatter(x=AT_percentages_view["Date"], y=100.0 * (AT_percentages_view["Active Trialers"]/AT_percentages_view["All Other Subscriptions"])
 , name="Active Trialers, Daily Percentages"), row=3, col=1)
 
-fig.update_xaxes(title_text="Date", row=1, col=2)
+#fig.update_xaxes(title_text="Date", row=1, col=2)
 fig.update_yaxes(title_text="Number", row=1, col=2)
 
-fig.update_xaxes(title_text="Date", row=2, col=1)
+#fig.update_xaxes(title_text="Date", row=2, col=1)
 fig.update_yaxes(title_text="Percentage", row=2, col=1)
 
-fig.update_xaxes(title_text="Date", row=2, col=2)
+#fig.update_xaxes(title_text="Date", row=2, col=2)
 fig.update_yaxes(title_text="Number", row=2, col=2)
 
-fig.update_xaxes(title_text="Date", row=3, col=1)
+#fig.update_xaxes(title_text="Date", row=3, col=1)
 fig.update_yaxes(title_text="Percentage", row=3, col=1)
 
 ############## C. ###############
