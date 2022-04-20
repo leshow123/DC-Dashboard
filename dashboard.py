@@ -336,7 +336,7 @@ df = num_new_subs
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Number of Subscribers"], name="Daily New Subscriptions"), 
                          row=1, col=1)
 
-fig.update_xaxes(title_text="Date", row=1, col=1)
+#fig.update_xaxes(title_text="Date", row=1, col=1)
 fig.update_yaxes(title_text="Number", row=1, col=1)
 
 ############## B. ###############
