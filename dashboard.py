@@ -109,7 +109,7 @@ print(num_new_subs, "\n")
    particular date in the timeline.
 
 """
-
+"""
 new_subs_commenced_as_trial_df = all_data_df[['subscriber_since','paid_until','days_in_subscription','was_trial']].copy()
 new_subs_commenced_as_trial_df["subscriber_since"].fillna('', inplace=True) 
 new_subs_commenced_as_trial_df["subscriber_since"] = new_subs_commenced_as_trial_df["subscriber_since"].astype(str)
@@ -128,11 +128,14 @@ new_subs_commenced_as_trial_df = new_subs_commenced_as_trial_df[new_subs_commenc
 new_subs_commenced_as_trial_df = \
     new_subs_commenced_as_trial_df.assign(date_purchased = lambda x: x['paid_until'] - x['days_in_subscription'])
 #print(new_subs_commenced_as_trial_df, "\n ******************************************")
+"""
 
 """
 There's a 2hr slack added to the expiration (i.e., paid_until). Why is that @MarkJones?
 Anyway, TODO: Compensate for this in via timedelta's HH:MM:SS for (alias) 'date_purchased'.
 Otherwise, we'd have to take 'date_purchased' as a close approx. of subscriber_since.
+
+"""
 
 """
 # Now that EVERY subscription has been fitted to a timeline, from the previous steps,
@@ -163,7 +166,7 @@ new_subs_commenced_as_trial_df_ACTUAL = \
 
 print("\n ******************** new_subs_commenced_as_trial_df_ACTUAL ********************** \n")
 print(new_subs_commenced_as_trial_df_ACTUAL, "\n")
-
+"""
 
 ########################################### ACTIVE SUBSCRIPTIONS ########################################################################################
 
@@ -415,6 +418,8 @@ AT_percentages_view['Active Trialers'].fillna(0, inplace=True) # You never know.
 
 print("\n********************** AT_percentages_view  *******************************\n")
 print(AT_percentages_view, "\n")
+
+
 
 #  PLOT DATA
 
