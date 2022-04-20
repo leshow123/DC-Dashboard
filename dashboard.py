@@ -422,8 +422,9 @@ fig = make_subplots(rows=3, cols=2, subplot_titles=("Per Day New Subscriptions",
                                                     "Paid Subscriptions | Active Paid Subscriptions (APS)",
                                                     "DNRs - Daily Percentages of APS",
                                                     "Active Trialers, PiT",
-                                                    "", #"Per Day New Subscriptions - Status \'Cancelled\'",
-                                                    "Active Trialers - Daily Percentage of APS"))
+                                                    "Active Trialers - Daily Percentage of APS",
+                                                    "" #"Per Day New Subscriptions - Status \'Cancelled\'",
+                                                    ))
 
 ############## A. ###############
 
@@ -461,7 +462,7 @@ fig.add_trace(go.Scatter(x=num_of_active_trialers["Date Purchased"], y=num_of_ac
 
 # Active Trialers, %ages
 fig.add_trace(go.Scatter(x=AT_percentages_view["Date"], y=100.0 * (AT_percentages_view["Active Trialers"]/AT_percentages_view["All Other Subscriptions"])
-, name="Active Trialers, Daily Percentages"), row=3, col=2)
+, name="Active Trialers, Daily Percentages"), row=3, col=1)
 
 fig.update_xaxes(title_text="Date", row=1, col=2)
 fig.update_yaxes(title_text="Number", row=1, col=2)
@@ -472,8 +473,8 @@ fig.update_yaxes(title_text="Percentage", row=2, col=1)
 fig.update_xaxes(title_text="Date", row=2, col=2)
 fig.update_yaxes(title_text="Number", row=2, col=2)
 
-fig.update_xaxes(title_text="Date", row=3, col=2)
-fig.update_yaxes(title_text="Percentage", row=3, col=2)
+fig.update_xaxes(title_text="Date", row=3, col=1)
+fig.update_yaxes(title_text="Percentage", row=3, col=1)
 
 ############## C. ###############
 """
