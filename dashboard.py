@@ -415,7 +415,6 @@ AT_percentages_view['Active Trialers'].fillna(0, inplace=True) # You never know.
 
 print("\n********************** AT_percentages_view  *******************************\n")
 print(AT_percentages_view, "\n")
-exit(1)
 
 #  PLOT DATA
 
@@ -445,7 +444,7 @@ fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["Active Paid Subscriptions
 fig.add_trace(go.Scatter(x=df["Date Purchased"], y=df["APS, Converted from Trialing"], name="APS - Converted from Trialing"), row=1, col=2)
 
 # DNRs - Daily Percentages
-fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["APS, Commenced with DNRs=True"]/df["Active Paid Subscriptions (APS)"]), name="Active DNRs Percentages"), row=2, col=1)
+fig.add_trace(go.Scatter(x=df["Date Purchased"], y=100.0 * (df["APS, Commenced with DNR=True"]/df["Active Paid Subscriptions (APS)"]), name="Active DNRs Percentages"), row=2, col=1)
 
 # Active Trialers, PiT
 fig.add_trace(go.Scatter(x=num_of_active_trialers["Date Purchased"], y=num_of_active_trialers["Active Trialers"], name="Active Trialers, PiT"), row=2, col=2)
